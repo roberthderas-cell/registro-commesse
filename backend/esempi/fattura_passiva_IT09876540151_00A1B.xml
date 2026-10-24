@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<p:FatturaElettronica versione="FPR12" xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">
+  <FatturaElettronicaHeader>
+    <DatiTrasmissione><IdTrasmittente><IdPaese>IT</IdPaese><IdCodice>09876540151</IdCodice></IdTrasmittente><ProgressivoInvio>00A1B</ProgressivoInvio><FormatoTrasmissione>FPR12</FormatoTrasmissione><CodiceDestinatario>0000000</CodiceDestinatario></DatiTrasmissione>
+    <CedentePrestatore><DatiAnagrafici><IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>09876540151</IdCodice></IdFiscaleIVA><Anagrafica><Denominazione>Montaggi Adda S.r.l.</Denominazione></Anagrafica><RegimeFiscale>RF01</RegimeFiscale></DatiAnagrafici></CedentePrestatore>
+    <CessionarioCommittente><DatiAnagrafici><IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>01234560157</IdCodice></IdFiscaleIVA><Anagrafica><Denominazione>Bovema S.r.l.</Denominazione></Anagrafica></DatiAnagrafici></CessionarioCommittente>
+  </FatturaElettronicaHeader>
+  <FatturaElettronicaBody>
+    <DatiGenerali>
+      <DatiGeneraliDocumento><TipoDocumento>TD01</TipoDocumento><Divisa>EUR</Divisa><Data>2026-10-20</Data><Numero>31/26</Numero><ImportoTotaleDocumento>13420.00</ImportoTotaleDocumento><Causale>SAL 2 posa in copertura - commessa C-2026-018</Causale></DatiGeneraliDocumento>
+      <DatiOrdineAcquisto><IdDocumento>ODA-26-0144</IdDocumento></DatiOrdineAcquisto>
+    </DatiGenerali>
+    <DatiBeniServizi>
+      <DettaglioLinee><NumeroLinea>1</NumeroLinea><Descrizione>Posa evacuatori in copertura, SAL 2</Descrizione><Quantita>1.00</Quantita><PrezzoUnitario>11000.00</PrezzoUnitario><PrezzoTotale>11000.00</PrezzoTotale><AliquotaIVA>22.00</AliquotaIVA></DettaglioLinee>
+      <DatiRiepilogo><AliquotaIVA>22.00</AliquotaIVA><ImponibileImporto>11000.00</ImponibileImporto><Imposta>2420.00</Imposta><EsigibilitaIVA>S</EsigibilitaIVA></DatiRiepilogo>
+    </DatiBeniServizi>
+    <DatiPagamento><CondizioniPagamento>TP02</CondizioniPagamento><DettaglioPagamento><ModalitaPagamento>MP05</ModalitaPagamento><DataScadenzaPagamento>2026-12-19</DataScadenzaPagamento><ImportoPagamento>13420.00</ImportoPagamento></DettaglioPagamento></DatiPagamento>
+  </FatturaElettronicaBody>
+</p:FatturaElettronica>

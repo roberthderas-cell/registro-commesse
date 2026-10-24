@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr><MsgId>STMT-20261023</MsgId><CreDtTm>2026-10-23T18:00:00</CreDtTm></GrpHdr>
+    <Stmt>
+      <Id>STMT-20261023-1</Id>
+      <Acct><Id><IBAN>IT60X0542811101000000123456</IBAN></Id></Acct>
+      <Ntry><NtryRef>BNK-0001</NtryRef><Amt Ccy="EUR">10760.00</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-10-23</Dt></BookgDt>
+        <NtryDtls><TxDtls><RltdPties><Dbtr><Nm>HOTEL DARSENA SRL</Nm></Dbtr></RltdPties><RmtInf><Ustrd>Pagamento fattura FA 2026/201 anticipo</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
+      <Ntry><NtryRef>BNK-0002</NtryRef><Amt Ccy="EUR">350.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-10-23</Dt></BookgDt>
+        <NtryDtls><TxDtls><RmtInf><Ustrd>Commissioni trimestrali</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

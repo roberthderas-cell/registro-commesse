@@ -1,0 +1,4 @@
+Commessa;Fornitore;Categoria;Descrizione;Importo;Data;Stato;Id
+C-2026-022;Aria Tecnica Veneta S.p.A.;Materiali;Serrande tagliafuoco;4.800,00;16/10/2026;Ordinato;
+C-2026-027;Metalfer Lombarda S.r.l.;Materiali;Evacuatori forzati 12 pz;38.500,00;20/10/2026;Ordinato;ODA-26-0160
+C-2026-099;Fornitore Inesistente;Materiali;Prova errore;1.000,00;20/10/2026;;

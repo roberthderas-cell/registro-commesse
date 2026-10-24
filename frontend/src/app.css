@@ -1,0 +1,8 @@
+/* Aggiunte al foglio di stile del prototipo (styles.css) */
+.sdichk{font-size:13px;display:flex;flex-direction:column;gap:4px}
+.sdichk div::before{content:"✓ ";color:var(--good);font-weight:700}
+.sdichk div.x::before{content:"! ";color:var(--warn);font-weight:700}
+.side .nav>div{display:contents}
+select.search{appearance:auto}
+.cfg button.panel{font:inherit;color:inherit}
+a{color:var(--info)}

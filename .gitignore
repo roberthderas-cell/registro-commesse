@@ -1,0 +1,13 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Dati locali: database, documenti caricati, configurazione con credenziali
+backend/data/
+backend/.env
+backend/fonti.yaml
+# Frontend
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo

@@ -1,0 +1,48 @@
+# Connessioni ai gestionali/ERP. Copiare in fonti.yaml e adattare.
+# Le password non vanno scritte qui: usare ${NOME_VARIABILE} e impostare la variabile d'ambiente (o il file .env).
+#
+# Ogni query deve restituire colonne con i nomi standard del tipo di record:
+#   commessa:        cod, cliente, oggetto, sistema, cantiere, commerciale, capo, contratto, ricavo, piva_cliente, stato
+#   ordine:          id, commessa, fornitore, categoria, descrizione, importo, data, stato (Ordinato|Consegnato), consegna
+#   fattura_passiva: commessa, fornitore, numero, data, importo, ordine, categoria, piva_fornitore, scadenza, pagamento
+#   fattura_attiva:  numero, data, importo, commessa, cliente, piva_cliente, scadenza
+#   rapportino:      commessa, data, ore, avanzamento, chi, nota
+#   movimento:       data, importo, causale, controparte, rif
+
+erp:
+  # Esempio funzionante: finto gestionale creato da scripts/crea_erp_demo.py
+  - nome: gestionale_demo
+    etichetta: Gestionale (demo)
+    tipo: sql
+    url: sqlite:///data/erp_demo.db
+    query:
+      ordine: |
+        SELECT o.NUMORD AS id, o.CDC AS commessa, o.RAGSOC_FOR AS fornitore, c.DESCR AS categoria,
+               o.DESART AS descrizione, o.IMPNETTO AS importo, o.DTORD AS data,
+               CASE o.STATO_EVAS WHEN 'E' THEN 'Consegnato' ELSE 'Ordinato' END AS stato
+        FROM MG_ORDFOR o JOIN TAB_CLASSI c ON c.CLASSE = o.CLASSE
+      fattura_passiva: |
+        SELECT NUMDOC AS numero, RAGSOC_FOR AS fornitore, PIVA AS piva_fornitore, CDC AS commessa,
+               NUMORD AS ordine, IMPONIBILE AS importo, DTDOC AS data, DTSCAD AS scadenza
+        FROM CO_FATFOR
+
+  # Esempio SQL Server (es. gestionali su MS SQL): serve il pacchetto pyodbc e il driver ODBC
+  # - nome: gestionale
+  #   etichetta: Gestionale aziendale
+  #   tipo: sql
+  #   url: mssql+pyodbc://lettore:${ERP_PASSWORD}@srv-erp/AZIENDA?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+  #   query:
+  #     ordine: SELECT ... AS id, ... AS commessa, ... FROM ...
+
+  # Esempio API REST: GET <base_url><endpoint> che restituisce una lista JSON
+  # - nome: erp_cloud
+  #   etichetta: ERP in cloud
+  #   tipo: rest
+  #   base_url: https://erp.example.com/api/v1
+  #   header:
+  #     Authorization: Bearer ${ERP_TOKEN}
+  #   endpoint:
+  #     ordine: /purchase-orders?status=open
+  #   campi:            # campo standard: campo dell'API
+  #     ordine: {id: number, commessa: project_code, fornitore: supplier_name, categoria: cost_class,
+  #              descrizione: description, importo: net_amount, data: order_date}

@@ -1,0 +1,25 @@
+# Esempio di installazione su server con PostgreSQL:  docker compose up -d  →  http://server:8000
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: registro
+      POSTGRES_USER: registro
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?imposta DB_PASSWORD nel file .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    restart: unless-stopped
+  app:
+    build: .
+    depends_on: [db]
+    environment:
+      RC_DATABASE_URL: postgresql+psycopg://registro:${DB_PASSWORD}@db/registro
+      RC_PIVA_AZIENDA: ${PIVA_AZIENDA:-IT01234560157}
+      RC_CARICA_DATI_ESEMPIO: "false"
+    volumes:
+      - ./backend/fonti.yaml:/app/backend/fonti.yaml:ro
+      - documenti:/app/backend/data/documenti
+    ports: ["8000:8000"]
+    restart: unless-stopped
+volumes:
+  pgdata:
+  documenti:
