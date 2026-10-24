@@ -54,7 +54,7 @@ def crea(body: NuovaCommessa, db: Session = DB, u: Utente = Depends(richiede("ad
     piano = body.piano or [{"descr": "Saldo a collaudo", "importo": body.ricavo, "trigger": "collaudo"}]
     c.piano = [m.Rata(codice=f"R{i}", descr=p["descr"], importo=p["importo"], trigger=p.get("trigger", "collaudo")) for i, p in enumerate(piano, 1)]
     db.add(c)
-    log(db, u.etichetta, cod, f"Creata commessa per {body.cliente} ({eur(body.ricavo)})", u.ruolo)
+    log(db, u.nome, cod, f"Creata commessa per {body.cliente} ({eur(body.ricavo)})", u.ruolo)
     db.commit()
     return {"cod": cod}
 
@@ -76,7 +76,7 @@ def avanza(cod: str, db: Session = DB, u: Utente = Depends(utente)):
     c.stato += 1
     if c.stato == 1 and not c.contratto:
         c.contratto = oggi()
-    log(db, u.etichetta, cod, f"Stato: {STATI[c.stato]}", u.ruolo)
+    log(db, u.nome, cod, f"Stato: {STATI[c.stato]}", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -84,7 +84,7 @@ def avanza(cod: str, db: Session = DB, u: Utente = Depends(utente)):
 def blocca(cod: str, bloccata: bool, db: Session = DB, u: Utente = Depends(richiede("admin"))):
     c = commessa_o_404(db, cod, u)
     c.bloccata = bloccata
-    log(db, u.etichetta, cod, "Commessa bloccata" if bloccata else "Commessa sbloccata", u.ruolo)
+    log(db, u.nome, cod, "Commessa bloccata" if bloccata else "Commessa sbloccata", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -94,13 +94,13 @@ def collaudo(cod: str, db: Session = DB, u: Utente = Depends(richiede("admin", "
     if c.stato != 5:
         raise HTTPException(409, "Il collaudo si registra quando la commessa è in «Collaudo e DICH.IMP.»")
     c.collaudo_ok, c.collaudo_data = True, oggi()
-    log(db, u.etichetta, cod, "Collaudo superato e DICH.IMP. rilasciata", u.ruolo)
+    log(db, u.nome, cod, "Collaudo superato e DICH.IMP. rilasciata", u.ruolo)
     return _fine(db, c, u)
 
 
 def _manuale(db: Session, tipo: str, dati: dict, u: Utente):
     try:
-        _, msg = GESTORI[tipo](db, Record(tipo, dati, "manuale"), "manuale", u.etichetta)
+        _, msg = GESTORI[tipo](db, Record(tipo, dati, "manuale"), "manuale", u.nome)
         return msg
     except Scarta as e:
         db.rollback()
@@ -135,14 +135,14 @@ def azione_ordine(cod: str, oid: str, azione: str, db: Session = DB, u: Utente =
             raise HTTPException(409, "L'ordine non è in attesa di autorizzazione")
         o.stato = "Ordinato" if azione == "autorizza" else "Respinto"
         o.nota = f"{'Autorizzato oltre budget' if azione == 'autorizza' else 'Respinto'} il {oggi():%d/%m/%Y}"
-        log(db, u.etichetta, cod, f"Ordine {oid} {'autorizzato' if azione == 'autorizza' else 'respinto'}", u.ruolo)
+        log(db, u.nome, cod, f"Ordine {oid} {'autorizzato' if azione == 'autorizza' else 'respinto'}", u.ruolo)
     elif azione == "consegna":
         if u.ruolo not in ("admin", "cantiere", "capocantiere", "tecnico"):
             raise HTTPException(403, "Operazione non consentita")
         if o.stato != "Ordinato":
             raise HTTPException(409, "Si possono segnare consegnati solo gli ordini emessi")
         o.stato, o.consegna = "Consegnato", oggi()
-        log(db, u.etichetta, cod, f"Consegnato ordine {oid} di {o.fornitore}", u.ruolo)
+        log(db, u.nome, cod, f"Consegnato ordine {oid} di {o.fornitore}", u.ruolo)
     else:
         raise HTTPException(404, "Azione sconosciuta")
     return _fine(db, c, u)
@@ -178,7 +178,7 @@ def nuova_variante(cod: str, body: NuovaVariante, db: Session = DB, u: Utente = 
     c = commessa_o_404(db, cod, u)
     n = len(c.varianti) + 1
     c.varianti.append(m.Variante(codice=f"V{n}", descr=body.descr, importo=body.importo, stato="proposta", da=u.nome, data=oggi()))
-    log(db, u.etichetta, cod, f"Proposta variante V{n} da {eur(body.importo)}", u.ruolo)
+    log(db, u.nome, cod, f"Proposta variante V{n} da {eur(body.importo)}", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -191,7 +191,7 @@ def decidi_variante(cod: str, vid: int, azione: str, db: Session = DB, u: Utente
     v.stato = "approvata" if azione == "approva" else "respinta"
     if v.stato == "approvata":
         c.piano.append(m.Rata(codice=f"R{v.codice}", descr=f"Variante {v.codice}, {v.descr}", importo=v.importo, trigger="collaudo"))
-    log(db, u.etichetta, cod, f"Variante {v.codice} {v.stato}", u.ruolo)
+    log(db, u.nome, cod, f"Variante {v.codice} {v.stato}", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -208,7 +208,7 @@ def emetti_fattura(cod: str, rid: int, db: Session = DB, u: Utente = Depends(ric
     n = max((int(x.rsplit("/", 1)[1]) for x in nums), default=0) + 1
     p.fattura_num, p.fattura_data, p.fattura_fonte = f"FA {anno}/{n:03d}", oggi(), "manuale"
     p.fattura_scad = oggi() + timedelta(days=cfg_get(db)["ggPag"])
-    log(db, u.etichetta, cod, f"Emessa fattura {p.fattura_num} ({p.descr}, {eur(p.importo)})", u.ruolo)
+    log(db, u.nome, cod, f"Emessa fattura {p.fattura_num} ({p.descr}, {eur(p.importo)})", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -219,7 +219,7 @@ def registra_incasso(cod: str, rid: int, db: Session = DB, u: Utente = Depends(r
     if not p or not p.fattura_num or p.incasso_data:
         raise HTTPException(409, "Rata non fatturata o già incassata")
     p.incasso_data, p.incasso_fonte = oggi(), "manuale"
-    log(db, u.etichetta, cod, f"Incassata fattura {p.fattura_num} ({eur(p.importo)})", u.ruolo)
+    log(db, u.nome, cod, f"Incassata fattura {p.fattura_num} ({eur(p.importo)})", u.ruolo)
     return _fine(db, c, u)
 
 
@@ -236,8 +236,8 @@ async def carica_documento(cod: str, tipo: str, file: UploadFile = File(...), db
     nome = Path(file.filename or f"{tipo}.pdf").name
     (cartella / nome).write_bytes(await file.read())
     doc = next((d for d in c.documenti if d.tipo == tipo), None) or m.Documento(tipo=tipo)
-    doc.file, doc.data, doc.chi = nome, oggi(), u.etichetta
+    doc.file, doc.data, doc.chi = nome, oggi(), u.nome
     if doc not in c.documenti:
         c.documenti.append(doc)
-    log(db, u.etichetta, cod, f"Caricato documento: {spec['l']} ({nome})", u.ruolo)
+    log(db, u.nome, cod, f"Caricato documento: {spec['l']} ({nome})", u.ruolo)
     return _fine(db, c, u)

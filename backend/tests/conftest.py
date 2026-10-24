@@ -11,7 +11,9 @@ os.environ["RC_FONTI_FILE"] = str(Path(__file__).resolve().parents[1] / "fonti.e
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.auth import hash_password  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
+from app.models import Utente  # noqa: E402
 from app.main import app  # noqa: E402
 from app.seed import carica_esempio  # noqa: E402
 
@@ -24,14 +26,35 @@ def erp_demo():
     main()
 
 
+PASSWORD = "Prova-della-suite-1"
+NOMI = {"admin": "Amministrazione", "direzione": "Direzione", "commerciale": "L. Bianchi", "tecnico": "Ufficio tecnico",
+        "cantiere": "Ufficio cantiere", "capocantiere": "M. Ferrari"}
+
+
 @pytest.fixture
-def client():
+def anonimo():
+    """Client senza accesso, con database di esempio e un utente per ruolo (username = ruolo)."""
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         carica_esempio(db)
+        for ruolo, nome in NOMI.items():
+            db.add(Utente(username=ruolo, nome=nome, ruolo=ruolo, password_hash=hash_password(PASSWORD), deve_cambiare_password=False))
+        db.commit()
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture
+def client(anonimo):
+    accedi(anonimo, "admin")
+    return anonimo
+
+
+def accedi(client, username, password=PASSWORD):
+    r = client.post("/api/accesso/login", json={"username": username, "password": password})
+    assert r.status_code == 200, r.text
+    return r.json()
 
 
 def carica(client, connettore, file, tipo=None, salva=False):

@@ -1,31 +1,42 @@
 from dataclasses import dataclass
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Cookie, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import models as m
+from ..auth import COOKIE, utente_da_token
 from ..db import get_db
 from ..dominio import ROLES
+
+DB = Depends(get_db)
 
 
 @dataclass
 class Utente:
-    ruolo: str
+    id: int
+    username: str
     nome: str
+    ruolo: str
+    deve_cambiare_password: bool
 
     @property
     def etichetta(self) -> str:
         return ROLES[self.ruolo]["l"]
 
 
-# Provvisorio: il ruolo arriva dall'intestazione X-Ruolo scelta nell'interfaccia.
-# Prima di andare in produzione va sostituito con un login vero (vedi README, "Prossimi passi").
-def utente(x_ruolo: str = Header("admin"), x_utente: str = Header("")) -> Utente:
-    if x_ruolo not in ROLES:
-        raise HTTPException(400, f"Ruolo sconosciuto: {x_ruolo}")
-    nome = x_utente or ("M. Ferrari" if x_ruolo == "capocantiere" else ROLES[x_ruolo]["l"])
-    return Utente(x_ruolo, nome)
+def utente_collegato(db: Session = DB, rc_sessione: str | None = Cookie(None)) -> Utente:
+    """Utente della sessione, anche se deve ancora cambiare la password (serve alle API di accesso)."""
+    u = utente_da_token(db, rc_sessione)
+    if not u:
+        raise HTTPException(401, "Accesso richiesto")
+    return Utente(u.id, u.username, u.nome, u.ruolo, u.deve_cambiare_password)
+
+
+def utente(u: Utente = Depends(utente_collegato)) -> Utente:
+    if u.deve_cambiare_password:
+        raise HTTPException(403, "Devi scegliere una nuova password prima di continuare")
+    return u
 
 
 def richiede(*ruoli: str):
@@ -43,4 +54,4 @@ def commessa_o_404(db: Session, cod: str, u: Utente) -> m.Commessa:
     return c
 
 
-DB = Depends(get_db)
+__all__ = ["COOKIE", "DB", "Utente", "commessa_o_404", "richiede", "utente", "utente_collegato"]

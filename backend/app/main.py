@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import commesse, fonti, generale
+from .api import accesso, commesse, fonti, generale
+from .auth import crea_utenti_iniziali
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .seed import carica_esempio
@@ -15,14 +16,16 @@ from .seed import carica_esempio
 @asynccontextmanager
 async def avvio(_: FastAPI):
     Base.metadata.create_all(engine)
-    if settings.carica_dati_esempio:
-        with SessionLocal() as db:
+    with SessionLocal() as db:
+        if settings.carica_dati_esempio:
             carica_esempio(db)
+        crea_utenti_iniziali(db, demo=settings.carica_dati_esempio)
     yield
 
 
 app = FastAPI(title="Registro Commesse", version="1.0.0", lifespan=avvio)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(accesso.router)
 app.include_router(generale.router)
 app.include_router(commesse.router)
 app.include_router(fonti.router)

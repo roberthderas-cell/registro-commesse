@@ -40,7 +40,7 @@ async def carica_file(nome: str, file: UploadFile = File(...), tipo: str | None 
     lettura = conn.leggi(dati, file.filename or "file", tipo)
     fonte_nome = {"tabelle": "excel"}.get(nome, nome)
     return importa(db, lettura, connettore=nome, fonte=fonte_nome, origine=file.filename or nome, tipo=tipo or ",".join(conn.tipi),
-                   chi=u.etichetta, salva=salva)
+                   chi=u.nome, salva=salva)
 
 
 @router.post("/erp/{nome}")
@@ -52,7 +52,7 @@ def sincronizza(nome: str, salva: bool = False, tipi: str | None = None, db: Ses
     ordine = ["commessa", "ordine", "fattura_passiva", "rapportino", "fattura_attiva", "movimento"]
     scelti = sorted(tipi.split(",") if tipi else f.tipi, key=lambda t: ordine.index(t) if t in ordine else 99)
     lettura = f.leggi(scelti)
-    return importa(db, lettura, connettore="erp", fonte=f"erp:{nome}", origine=f.etichetta, tipo=",".join(scelti), chi=u.etichetta, salva=salva)
+    return importa(db, lettura, connettore="erp", fonte=f"erp:{nome}", origine=f.etichetta, tipo=",".join(scelti), chi=u.nome, salva=salva)
 
 
 @router.get("/storico")

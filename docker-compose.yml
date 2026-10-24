@@ -15,6 +15,9 @@ services:
       RC_DATABASE_URL: postgresql+psycopg://registro:${DB_PASSWORD}@db/registro
       RC_PIVA_AZIENDA: ${PIVA_AZIENDA:-IT01234560157}
       RC_CARICA_DATI_ESEMPIO: "false"
+      RC_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # con HTTPS davanti (reverse proxy) impostare a "true"
+      RC_COOKIE_SECURE: ${COOKIE_SECURE:-false}
     volumes:
       - ./backend/fonti.yaml:/app/backend/fonti.yaml:ro
       - documenti:/app/backend/data/documenti
