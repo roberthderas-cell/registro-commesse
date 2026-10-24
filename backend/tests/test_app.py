@@ -1,4 +1,4 @@
-from conftest import carica
+from conftest import accedi, carica
 
 
 def esiti(res):
@@ -15,10 +15,13 @@ def test_indicatori_come_nel_prototipo(client):
 
 
 def test_ruoli(client):
-    capo = client.get("/api/commesse", headers={"X-Ruolo": "capocantiere"}).json()
+    accedi(client, "capocantiere")
+    capo = client.get("/api/commesse").json()
     assert {c["cod"] for c in capo} == {"C-2026-018", "C-2026-009"}
     assert "ricavo" not in capo[0]["kpi"] and "margine" not in capo[0]["kpi"]
-    assert client.get("/api/cruscotto", headers={"X-Ruolo": "tecnico"}).status_code == 403
+    accedi(client, "tecnico")
+    assert client.get("/api/cruscotto").status_code == 403
+    accedi(client, "admin")
     assert client.post("/api/commesse/C-2026-018/avanza").status_code == 409  # cantiere non al 100%
 
 
@@ -91,11 +94,12 @@ def test_sincronizzazione_erp(client):
 
 
 def test_flusso_manuale_ordine_oltre_budget_e_autorizzazione(client):
-    r = client.post("/api/commesse/C-2026-027/ordini", json={"fornitore": "Metalfer Lombarda S.r.l.", "categoria": "Trasporti", "importo": 5000},
-                    headers={"X-Ruolo": "cantiere"})
+    accedi(client, "cantiere")
+    r = client.post("/api/commesse/C-2026-027/ordini", json={"fornitore": "Metalfer Lombarda S.r.l.", "categoria": "Trasporti", "importo": 5000})
     assert r.status_code == 200, r.text
     o = next(o for o in r.json()["ordini"] if o["fornitore"] == "Metalfer Lombarda S.r.l.")
     assert o["stato"] == "Autorizzazione richiesta"
-    assert client.post(f"/api/commesse/C-2026-027/ordini/{o['id']}/autorizza", headers={"X-Ruolo": "cantiere"}).status_code == 403
-    ok = client.post(f"/api/commesse/C-2026-027/ordini/{o['id']}/autorizza", headers={"X-Ruolo": "direzione"})
+    assert client.post(f"/api/commesse/C-2026-027/ordini/{o['id']}/autorizza").status_code == 403
+    accedi(client, "direzione")
+    ok = client.post(f"/api/commesse/C-2026-027/ordini/{o['id']}/autorizza")
     assert next(x for x in ok.json()["ordini"] if x["id"] == o["id"])["stato"] == "Ordinato"

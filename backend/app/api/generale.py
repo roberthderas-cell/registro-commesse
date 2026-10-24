@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api", tags=["generale"])
 @router.get("/meta")
 def meta(db: Session = DB, u: Utente = Depends(utente)):
     return {"stati": STATI, "fasi": FASI, "cats": CATS, "docs": DOCS, "ruoli": ROLES, "trig": TRIG, "oggi": oggi(),
-            "vede": sorted(SEE[u.ruolo]), "utente": u.nome, "ruolo": u.ruolo, "cfg": cfg_get(db)}
+            "vede": sorted(SEE[u.ruolo]), "utente": u.nome, "username": u.username, "ruolo": u.ruolo, "cfg": cfg_get(db)}
 
 
 @router.get("/cruscotto")
@@ -86,7 +86,7 @@ def registra_sdi(fid: int, body: Registrazione, db: Session = DB, u: Utente = De
             "ordine": body.ordine if body.ordine is not None else f.rif_ordine, "categoria": body.categoria,
             "piva_fornitore": f.piva_fornitore, "scadenza": f.scadenza}
     try:
-        _, msg = GESTORI["fattura_passiva"](db, Record("fattura_passiva", dati, "sdi", rif_esterno=f.rif_esterno), f.fonte, u.etichetta)
+        _, msg = GESTORI["fattura_passiva"](db, Record("fattura_passiva", dati, "sdi", rif_esterno=f.rif_esterno), f.fonte, u.nome)
     except Scarta as e:
         db.rollback()
         raise HTTPException(422, str(e))
@@ -99,7 +99,7 @@ def scarta_sdi(fid: int, db: Session = DB, u: Utente = Depends(richiede("admin")
     f = db.get(m.FatturaSdi, fid)
     if not f:
         raise HTTPException(404, "Fattura non trovata")
-    log(db, u.etichetta, f.rif_commessa, f"Scartata dalla casella SDI la fattura {f.num} di {f.fornitore} ({eur(f.importo)}): non di commessa", u.ruolo)
+    log(db, u.nome, f.rif_commessa, f"Scartata dalla casella SDI la fattura {f.num} di {f.fornitore} ({eur(f.importo)}): non di commessa", u.ruolo)
     db.delete(f)
     db.commit()
     return {"ok": True}
@@ -110,7 +110,7 @@ def registro(cod: str | None = None, limit: int = 300, db: Session = DB, u: Uten
     q = select(m.LogEvento).order_by(m.LogEvento.ts.desc(), m.LogEvento.id.desc()).limit(limit)
     if cod:
         q = q.where(m.LogEvento.cod == cod)
-    return [{"id": x.id, "ts": x.ts, "chi": x.chi, "cod": x.cod, "t": x.testo} for x in db.scalars(q)]
+    return [{"id": x.id, "ts": x.ts, "chi": x.chi, "ruolo": x.ruolo, "cod": x.cod, "t": x.testo} for x in db.scalars(q)]
 
 
 @router.get("/movimenti")
@@ -126,6 +126,6 @@ def salva_impostazioni(cfg: dict, db: Session = DB, u: Utente = Depends(richiede
     row = db.get(m.Impostazione, "cfg") or m.Impostazione(chiave="cfg")
     row.valore = nuovo
     db.add(row)
-    log(db, u.etichetta, None, "Aggiornate le impostazioni", u.ruolo)
+    log(db, u.nome, None, "Aggiornate le impostazioni", u.ruolo)
     db.commit()
     return nuovo

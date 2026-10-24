@@ -197,6 +197,33 @@ class Importazione(Base):
     esito: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
+class Utente(Base):
+    __tablename__ = "utenti"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(60), unique=True, index=True)
+    # Nome mostrato nel registro; per i capocantiere deve coincidere con il campo "capo" delle commesse
+    nome: Mapped[str] = mapped_column(String(80))
+    ruolo: Mapped[str] = mapped_column(String(30))
+    password_hash: Mapped[str] = mapped_column(String(300))
+    attivo: Mapped[bool] = mapped_column(Boolean, default=True)
+    deve_cambiare_password: Mapped[bool] = mapped_column(Boolean, default=True)
+    tentativi_falliti: Mapped[int] = mapped_column(Integer, default=0)
+    bloccato_fino: Mapped[datetime | None] = mapped_column(DateTime)
+    creato: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    ultimo_accesso: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class Sessione(Base):
+    """Sessione di accesso: nel cookie c'è il token, qui solo la sua impronta SHA-256."""
+    __tablename__ = "sessioni"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    utente_id: Mapped[int] = mapped_column(ForeignKey("utenti.id", ondelete="CASCADE"))
+    creata: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    scadenza: Mapped[datetime] = mapped_column(DateTime)
+    utente: Mapped[Utente] = relationship()
+
+
 class Impostazione(Base):
     __tablename__ = "impostazioni"
     chiave: Mapped[str] = mapped_column(String(40), primary_key=True)

@@ -16,5 +16,6 @@ sleep 3
 echo
 echo "  Registro Commesse:  http://127.0.0.1:5173"
 echo "  Documentazione API: http://127.0.0.1:8000/docs"
+[ -f backend/data/primo_accesso.txt ] && echo "  Credenziali di primo accesso: backend/data/primo_accesso.txt"
 echo
 wait
