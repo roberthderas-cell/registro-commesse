@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -23,7 +23,9 @@ async def avvio(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Registro Commesse", version="1.0.0", lifespan=avvio)
+app = FastAPI(title="Registro Commesse", version="1.0.0", lifespan=avvio,
+              docs_url="/docs" if settings.docs_api else None, redoc_url=None,
+              openapi_url="/openapi.json" if settings.docs_api else None)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(accesso.router)
 app.include_router(generale.router)
@@ -43,5 +45,7 @@ if DIST.exists():
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(404, "Indirizzo API inesistente")
         f = DIST / path
         return FileResponse(f if path and f.is_file() else DIST / "index.html")

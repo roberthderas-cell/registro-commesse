@@ -5,13 +5,14 @@ from pathlib import Path
 import pytest
 
 _TMP = tempfile.mkdtemp(prefix="rc-test-")
-os.environ["RC_DATABASE_URL"] = f"sqlite:///{_TMP}/test.db"
+# Per provare su PostgreSQL: RC_DATABASE_URL=postgresql+psycopg://... pytest
+os.environ.setdefault("RC_DATABASE_URL", f"sqlite:///{_TMP}/test.db")
 os.environ["RC_OGGI"] = "2026-10-24"
 os.environ["RC_FONTI_FILE"] = str(Path(__file__).resolve().parents[1] / "fonti.example.yaml")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.auth import hash_password  # noqa: E402
+from app.auth import _falliti_ip, hash_password  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.models import Utente  # noqa: E402
 from app.main import app  # noqa: E402
@@ -34,6 +35,7 @@ NOMI = {"admin": "Amministrazione", "direzione": "Direzione", "commerciale": "L.
 @pytest.fixture
 def anonimo():
     """Client senza accesso, con database di esempio e un utente per ruolo (username = ruolo)."""
+    _falliti_ip.clear()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     with SessionLocal() as db:

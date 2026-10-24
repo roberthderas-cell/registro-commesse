@@ -112,3 +112,18 @@ def test_registro_con_nome_della_persona(client):
     accedi(client, "admin")
     ultimo = client.get("/api/log?cod=C-2026-018").json()[0]
     assert ultimo["chi"] == "L. Bianchi" and ultimo["ruolo"] == "commerciale"
+
+
+def test_freno_per_indirizzo_ip(anonimo):
+    from app import auth
+    auth._falliti_ip.clear()
+    for i in range(auth.MAX_FALLITI_IP):
+        anonimo.post("/api/accesso/login", json={"username": f"inventato{i}", "password": "x"})
+    r = anonimo.post("/api/accesso/login", json={"username": "admin", "password": PASSWORD})
+    assert r.status_code == 429
+    auth._falliti_ip.clear()
+    assert anonimo.post("/api/accesso/login", json={"username": "admin", "password": PASSWORD}).status_code == 200
+
+
+def test_modello_csv_richiede_accesso(anonimo):
+    assert anonimo.get("/api/fonti/modello/ordine.csv").status_code == 401

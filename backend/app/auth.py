@@ -8,13 +8,14 @@ import hashlib
 import hmac
 import secrets
 import string
+import time
 from datetime import datetime, timedelta
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from . import models as m
-from .config import BASE_DIR, settings
+from .config import settings
 
 COOKIE = "rc_sessione"
 N, R, P = 2**14, 8, 1
@@ -55,6 +56,25 @@ def controlla_password_nuova(pwd: str, username: str) -> str | None:
     if len(set(pwd)) < 5:
         return "La password è troppo ripetitiva"
     return None
+
+
+# Freno per indirizzo IP, oltre al blocco per utente: chi prova molti nomi utente diversi
+# dallo stesso indirizzo viene fermato per un quarto d'ora (memoria del processo, si azzera al riavvio)
+MAX_FALLITI_IP, FINESTRA_IP = 20, 15 * 60
+_falliti_ip: dict[str, list[float]] = {}
+
+
+def ip_frenato(ip: str) -> bool:
+    adesso = time.monotonic()
+    recenti = [t for t in _falliti_ip.get(ip, []) if adesso - t < FINESTRA_IP]
+    _falliti_ip[ip] = recenti
+    return len(recenti) >= MAX_FALLITI_IP
+
+
+def segna_fallimento_ip(ip: str):
+    _falliti_ip.setdefault(ip, []).append(time.monotonic())
+    if len(_falliti_ip) > 10_000:  # non far crescere la memoria all'infinito
+        _falliti_ip.clear()
 
 
 def _impronta(token: str) -> str:
@@ -122,7 +142,7 @@ def chiudi_sessioni_utente(db: Session, utente_id: int, tranne: str | None = Non
 UTENTI_DEMO = [("direzione", "Direzione", "direzione"),("l.bianchi", "L. Bianchi", "commerciale"), ("s.galli", "S. Galli", "commerciale"),
                ("tecnico", "Ufficio tecnico", "tecnico"), ("cantiere", "Ufficio cantiere", "cantiere"),
                ("m.ferrari", "M. Ferrari", "capocantiere"), ("d.colombo", "D. Colombo", "capocantiere")]
-FILE_PRIMO_ACCESSO = BASE_DIR / "data" / "primo_accesso.txt"
+FILE_PRIMO_ACCESSO = settings.data_dir / "primo_accesso.txt"
 
 
 def crea_utenti_iniziali(db: Session, demo: bool) -> list[tuple[str, str, str]]:

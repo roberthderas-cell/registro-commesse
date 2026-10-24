@@ -1,28 +1,62 @@
-# Esempio di installazione su server con PostgreSQL:  docker compose up -d  →  http://server:8000
+# Installazione su server: PostgreSQL + applicazione + Caddy (HTTPS automatico) + copie di sicurezza giornaliere.
+# Le impostazioni stanno nel file .env accanto a questo (modello: deploy/env.example). Guida: docs/SERVER.md
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.4-alpine
     environment:
       POSTGRES_DB: registro
       POSTGRES_USER: registro
       POSTGRES_PASSWORD: ${DB_PASSWORD:?imposta DB_PASSWORD nel file .env}
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registro -d registro"]
+      interval: 5s
+      retries: 20
     restart: unless-stopped
+
   app:
     build: .
-    depends_on: [db]
+    depends_on:
+      db: {condition: service_healthy}
     environment:
       RC_DATABASE_URL: postgresql+psycopg://registro:${DB_PASSWORD}@db/registro
-      RC_PIVA_AZIENDA: ${PIVA_AZIENDA:-IT01234560157}
+      RC_PIVA_AZIENDA: ${PIVA_AZIENDA:?imposta PIVA_AZIENDA nel file .env}
       RC_CARICA_DATI_ESEMPIO: "false"
       RC_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      # con HTTPS davanti (reverse proxy) impostare a "true"
-      RC_COOKIE_SECURE: ${COOKIE_SECURE:-false}
-    volumes:
-      - ./backend/fonti.yaml:/app/backend/fonti.yaml:ro
-      - documenti:/app/backend/data/documenti
-    ports: ["8000:8000"]
+      RC_COOKIE_SECURE: "true"
+      RC_DOCS_API: "false"
+    volumes: [dati:/app/backend/data]
+    expose: ["8000"]          # raggiungibile solo da Caddy, non da internet
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    depends_on: [app]
+    environment:
+      DOMINIO: ${DOMINIO:?imposta DOMINIO nel file .env}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16.4-alpine
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      GIORNI: ${BACKUP_GIORNI:-30}
+    volumes:
+      - ./backup:/backup
+      - dati:/dati:ro
+      - ./deploy/backup.sh:/backup.sh:ro
+    entrypoint: ["sh", "/backup.sh"]
+    restart: unless-stopped
+
 volumes:
   pgdata:
-  documenti:
+  dati:
+  caddy_data:
+  caddy_config:

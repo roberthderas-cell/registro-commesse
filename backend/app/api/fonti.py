@@ -71,7 +71,7 @@ def esito(iid: int, db: Session = DB, u: Utente = Depends(richiede("admin", "dir
 
 
 @router.get("/modello/{tipo}.csv")
-def modello(tipo: str):
+def modello(tipo: str, u: Utente = Depends(richiede("admin"))):
     """Modello CSV vuoto con le intestazioni giuste, da aprire in Excel."""
     if tipo not in TIPI or tipo == "fattura_sdi":
         raise HTTPException(404, "Tipo sconosciuto")
