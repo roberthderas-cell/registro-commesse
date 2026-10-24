@@ -1,12 +1,12 @@
 """Accesso (login, uscita, cambio password) e gestione degli utenti da parte dell'amministrazione."""
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import models as m
 from ..auth import (COOKIE, apri_sessione, autentica, chiudi_sessione, chiudi_sessioni_utente, controlla_password_nuova,
-                    hash_password, password_temporanea, verifica_password)
+                    hash_password, ip_frenato, password_temporanea, segna_fallimento_ip, verifica_password)
 from ..config import settings
 from ..dominio import ROLES
 from ..servizi import log
@@ -25,9 +25,13 @@ class Credenziali(BaseModel):
 
 
 @router.post("/accesso/login")
-def login(body: Credenziali, response: Response, db: Session = DB):
+def login(body: Credenziali, request: Request, response: Response, db: Session = DB):
+    ip = request.client.host if request.client else "?"
+    if ip_frenato(ip):
+        raise HTTPException(429, "Troppi tentativi da questo indirizzo: riprova tra un quarto d'ora")
     u, errore = autentica(db, body.username, body.password)
     if not u:
+        segna_fallimento_ip(ip)
         raise HTTPException(401, errore)
     token = apri_sessione(db, u)
     response.set_cookie(COOKIE, token, httponly=True, samesite="lax", secure=settings.cookie_secure,

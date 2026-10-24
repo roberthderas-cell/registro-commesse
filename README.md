@@ -91,17 +91,20 @@ Variabili d'ambiente (o file `backend/.env`), tutte con prefisso `RC_`:
 | `RC_ADMIN_PASSWORD` | generata | password iniziale di `admin` al primo avvio (da cambiare al primo accesso) |
 | `RC_DURATA_SESSIONE_ORE` | `10` | durata della sessione senza attività |
 | `RC_COOKIE_SECURE` | `false` | `true` quando l'app è servita in HTTPS |
+| `RC_DOCS_API` | `true` | documentazione interattiva delle API su `/docs` (spenta sul server) |
+| `RC_DATA_DIR` | `backend/data` | cartella di documenti caricati e credenziali di primo accesso |
 
-## Su un server
+## Online su un server
 
-`docker compose up -d` (con `DB_PASSWORD` nel file `.env`) avvia PostgreSQL e l'applicazione su http://server:8000.
-Il backend serve anche il frontend compilato. Senza dati di esempio viene creato solo `admin`, con la password
-di `ADMIN_PASSWORD` (nel `.env`) oppure, se manca, una generata: si legge con
-`docker compose exec app cat data/primo_accesso.txt`.
+Guida passo passo per un server gratuito Oracle Cloud: **[docs/SERVER.md](docs/SERVER.md)**.
+In breve: `./deploy/pubblica.sh ubuntu@IP chiave-ssh` copia l'ultima versione salvata in git sul server e avvia
+PostgreSQL, l'applicazione e Caddy (HTTPS automatico), più una copia di sicurezza ogni notte.
+Altri script in `deploy/`: `porta-dati.sh` (dati dal portatile al server), `scarica-backup.sh` (copie sul portatile).
+
+Per provare i test su PostgreSQL: `RC_DATABASE_URL=postgresql+psycopg://utente@host/db .venv/bin/python -m pytest`.
 
 ## Prossimi passi
 
-- HTTPS davanti all'applicazione (es. reverse proxy con certificato) prima di renderla raggiungibile fuori dall'ufficio, con `RC_COOKIE_SECURE=true`.
 - Schermate del prototipo non ancora portate: Business intelligence, Per periodo, Scadenzario, Anagrafiche, Report e scheda stampabile, demo guidata.
 - Migrazioni del database con Alembic, quando lo schema inizierà a cambiare con dati veri dentro.
 - Scarico automatico delle fatture dal cassetto fiscale o dall'intermediario SDI (oggi si caricano i file).

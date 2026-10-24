@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     # SQLite in locale; in produzione per esempio postgresql+psycopg://utente:pwd@host/registro
     database_url: str = f"sqlite:///{BASE_DIR / 'data' / 'registro.db'}"
+    # Cartella per documenti caricati e credenziali di primo accesso
+    data_dir: Path = BASE_DIR / "data"
     # Partita IVA dell'azienda: serve a capire se una FatturaPA è attiva (emessa) o passiva (ricevuta)
     piva_azienda: str = "IT01234560157"
     # Data di riferimento fissa (utile per i dati di esempio); vuota = oggi
@@ -25,6 +27,8 @@ class Settings(BaseSettings):
     durata_sessione_ore: int = 10
     # true quando l'app è servita in HTTPS: il cookie di sessione viaggia solo cifrato
     cookie_secure: bool = False
+    # Documentazione interattiva delle API su /docs: comoda in sviluppo, da spegnere su internet
+    docs_api: bool = True
 
 
 settings = Settings()

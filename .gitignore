@@ -11,3 +11,8 @@ backend/fonti.yaml
 frontend/node_modules/
 frontend/dist/
 *.tsbuildinfo
+
+# Server
+/.env
+/backup/
+/backup-server/

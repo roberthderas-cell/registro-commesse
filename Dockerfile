@@ -15,4 +15,5 @@ COPY backend/ backend/
 COPY --from=frontend /src/frontend/dist frontend/dist
 WORKDIR /app/backend
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --proxy-headers: legge il vero indirizzo del visitatore da Caddy (serve al freno sui tentativi di accesso)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

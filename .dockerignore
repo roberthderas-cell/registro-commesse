@@ -1,0 +1,13 @@
+# Mai nell'immagine: ambienti locali, dati, credenziali
+.git
+.claude
+.env
+backup
+backend/.venv
+backend/data
+backend/.env
+backend/fonti.yaml
+backend/.pytest_cache
+**/__pycache__
+frontend/node_modules
+frontend/dist

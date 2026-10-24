@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from .. import models as m
 from ..calcoli import blocco_avanzamento, calc, eur, stato_rata
-from ..config import BASE_DIR, oggi
+from ..config import oggi, settings
 from ..connettori import Record
 from ..dominio import CATS, DOCS, STATI
 from ..importazione import GESTORI, Scarta
@@ -17,7 +17,8 @@ from ..servizi import cfg_get, dettaglio, log, puo_avanzare, sintesi, visibili
 from .deps import DB, Utente, commessa_o_404, richiede, utente
 
 router = APIRouter(prefix="/api/commesse", tags=["commesse"])
-DIR_DOC = BASE_DIR / "data" / "documenti"
+DIR_DOC = settings.data_dir / "documenti"
+MAX_DOC = 30 * 1024 * 1024
 
 
 @router.get("")
@@ -234,7 +235,10 @@ async def carica_documento(cod: str, tipo: str, file: UploadFile = File(...), db
     cartella = DIR_DOC / cod
     cartella.mkdir(parents=True, exist_ok=True)
     nome = Path(file.filename or f"{tipo}.pdf").name
-    (cartella / nome).write_bytes(await file.read())
+    contenuto = await file.read()
+    if len(contenuto) > MAX_DOC:
+        raise HTTPException(413, "File troppo grande (massimo 30 MB)")
+    (cartella / nome).write_bytes(contenuto)
     doc = next((d for d in c.documenti if d.tipo == tipo), None) or m.Documento(tipo=tipo)
     doc.file, doc.data, doc.chi = nome, oggi(), u.nome
     if doc not in c.documenti:
